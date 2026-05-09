@@ -1,0 +1,681 @@
+{
+  "name": "E-Commerce Event Processing",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ecommerce-events",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        448
+      ],
+      "id": "482b718c-fc71-4b12-9913-6b42c0d14eeb",
+      "webhookId": "5b1dcc1e-5cd5-4ef3-aae2-da5e43b5b522"
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.body.event_type }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "product_view"
+            },
+            {
+              "value2": "add_to_cart",
+              "output": 1
+            },
+            {
+              "value2": "remove_from_cart",
+              "output": 2
+            },
+            {
+              "value2": "checkout_started",
+              "output": 3
+            },
+            {
+              "value2": "purchase",
+              "output": 3
+            }
+          ]
+        }
+      },
+      "name": "Event Switch",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        416
+      ],
+      "id": "0ae8cd32-cd6a-46c6-8a5b-7bbcef13f38a"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://subsonic-handpick-quaking.ngrok-free.dev/events",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "ngrok-skip-browser-warning",
+              "value": "true"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "user_id",
+              "value": "={{ $json.body.user_id }}"
+            },
+            {
+              "name": "event_type",
+              "value": "={{ $json.body.event_type }}"
+            },
+            {
+              "name": "product_id",
+              "value": "={{ $json.body.product_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "FastAPI Event (View)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        -48,
+        0
+      ],
+      "id": "04a0021e-4a00-4d73-b982-aafb1a8afc5d"
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "email": "={{$json[\"email\"]}}",
+        "additionalFields": {
+          "customPropertiesUi": {
+            "customPropertiesValues": [
+              {
+                "property": "action",
+                "value": "viewed_product"
+              }
+            ]
+          }
+        },
+        "options": {}
+      },
+      "name": "HubSpot (View)",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2,
+      "position": [
+        176,
+        0
+      ],
+      "id": "b2516760-a0fd-4928-9808-e462d07bba89"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://subsonic-handpick-quaking.ngrok-free.dev/events",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "ngrok-skip-browser-warning",
+              "value": "true"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "user_id",
+              "value": "={{ $json.body.user_id }}"
+            },
+            {
+              "name": "event_type",
+              "value": "={{ $json.body.event_type }}"
+            },
+            {
+              "name": "product_id",
+              "value": "={{ $json.body.product_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "FastAPI Event (Add)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        -48,
+        208
+      ],
+      "id": "31fa1c8c-86b6-41d8-a1a1-49ca2a8ebd1a"
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "seconds"
+      },
+      "name": "Wait 30m",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        400,
+        208
+      ],
+      "id": "e316b1d9-cf5b-4c4b-a499-50b18f6f3cae",
+      "webhookId": "9f7d050d-2527-4535-a7ed-186a9465dac2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"has_purchased\"]}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Check if Purchased",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        640,
+        208
+      ],
+      "id": "debdf1bc-84e4-4352-b853-1b244118f821"
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $('Check if Purchased').item.json.cart_status }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "active"
+            },
+            {
+              "value2": "checkout_started",
+              "output": 1
+            }
+          ]
+        }
+      },
+      "name": "Cart Status Switch",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        912,
+        192
+      ],
+      "id": "94e0f77a-66bf-4eb0-b74f-f08b97a4a88b"
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "email": "={{$json[\"email\"]}}",
+        "additionalFields": {
+          "customPropertiesUi": {
+            "customPropertiesValues": [
+              {
+                "property": "action",
+                "value": "cart_abandoned"
+              }
+            ]
+          }
+        },
+        "options": {}
+      },
+      "name": "HubSpot (Cart Abandoned)",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2,
+      "position": [
+        1232,
+        96
+      ],
+      "id": "ba5e2846-90ff-4640-aa75-c946ed2d9197"
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "email": "={{$json[\"email\"]}}",
+        "additionalFields": {
+          "customPropertiesUi": {
+            "customPropertiesValues": [
+              {
+                "property": "action",
+                "value": "checkout_reminder"
+              }
+            ]
+          }
+        },
+        "options": {}
+      },
+      "name": "HubSpot (Checkout Reminder)",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2,
+      "position": [
+        1232,
+        288
+      ],
+      "id": "e729b1bc-1afa-42b7-b384-0bd3a9ceab83"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://subsonic-handpick-quaking.ngrok-free.dev/events",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "ngrok-skip-browser-warning",
+              "value": "true"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "user_id",
+              "value": "={{ $json.body.user_id }}"
+            },
+            {
+              "name": "event_type",
+              "value": "={{ $json.body.event_type }}"
+            },
+            {
+              "name": "product_id",
+              "value": "={{ $json.body.product_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "FastAPI Event (Remove)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        -48,
+        400
+      ],
+      "id": "71bc8ef2-9e0a-4cf6-80a2-b5836b040efa"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://subsonic-handpick-quaking.ngrok-free.dev/events",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "ngrok-skip-browser-warning",
+              "value": "true"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "user_id",
+              "value": "={{ $json.body.user_id }}"
+            },
+            {
+              "name": "event_type",
+              "value": "={{ $json.body.event_type }}"
+            },
+            {
+              "name": "product_id",
+              "value": "={{ $json.body.product_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "FastAPI Event (Checkout)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        -48,
+        608
+      ],
+      "id": "a3a4e86e-7dc1-4a28-8b8b-0eabf95b6798"
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "email": "={{$json[\"email\"]}}",
+        "additionalFields": {
+          "customPropertiesUi": {
+            "customPropertiesValues": [
+              {
+                "property": "action",
+                "value": "checkout_started"
+              }
+            ]
+          }
+        },
+        "options": {}
+      },
+      "name": "HubSpot (Checkout)",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2,
+      "position": [
+        208,
+        608
+      ],
+      "id": "d60ac782-53fa-4b94-a4cb-d600351e9d0b"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://subsonic-handpick-quaking.ngrok-free.dev/events",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "ngrok-skip-browser-warning",
+              "value": "true"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "user_id",
+              "value": "={{ $json.body.user_id }}"
+            },
+            {
+              "name": "event_type",
+              "value": "={{ $json.body.event_type }}"
+            },
+            {
+              "name": "product_id",
+              "value": "={{ $json.body.product_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "FastAPI Event (Purchase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        -48,
+        800
+      ],
+      "id": "eb883308-8d29-44c7-ba44-071177545195"
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "email": "={{ $('Webhook').item.json.body.email }}",
+        "additionalFields": {
+          "customPropertiesUi": {
+            "customPropertiesValues": [
+              {
+                "property": "action",
+                "value": "purchase_complete"
+              }
+            ]
+          }
+        },
+        "options": {}
+      },
+      "name": "HubSpot (Purchase)",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2,
+      "position": [
+        208,
+        800
+      ],
+      "id": "b6f10599-d1c6-469c-bbdf-a312fcc0c5e3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7381cfda-a3d5-40a3-b43a-03c671acbb32",
+              "leftValue": "remove_to_cart",
+              "rightValue": "purchase",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -288,
+        624
+      ],
+      "id": "f1633e88-4dc9-4d39-8f4c-f191c7e5b530",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "url": "=https://subsonic-handpick-quaking.ngrok-free.dev/decisions/{{ $('Webhook').item.json.body.user_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "ngrok-skip-browser-warning",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        160,
+        208
+      ],
+      "id": "fecebc55-d213-4676-9255-43be231701ab",
+      "name": "HTTP Request"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Event Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Event Switch": {
+      "main": [
+        [
+          {
+            "node": "FastAPI Event (View)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "FastAPI Event (Add)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "FastAPI Event (Remove)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FastAPI Event (View)": {
+      "main": [
+        [
+          {
+            "node": "HubSpot (View)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FastAPI Event (Add)": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 30m": {
+      "main": [
+        [
+          {
+            "node": "Check if Purchased",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Purchased": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Cart Status Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cart Status Switch": {
+      "main": [
+        [
+          {
+            "node": "HubSpot (Cart Abandoned)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HubSpot (Checkout Reminder)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FastAPI Event (Checkout)": {
+      "main": [
+        [
+          {
+            "node": "HubSpot (Checkout)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FastAPI Event (Purchase)": {
+      "main": [
+        [
+          {
+            "node": "HubSpot (Purchase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HubSpot (Checkout)": {
+      "main": [
+        []
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "FastAPI Event (Checkout)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "FastAPI Event (Purchase)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Wait 30m",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "dd1efedd-ba1f-40c3-8626-d95f434cc448",
+  "meta": {
+    "instanceId": "f27fb0887e60c65b9bf63be4fd208a5e1d58907ce02867d4d8a6a940a1a27d27"
+  },
+  "id": "5LMX2zxxNoC0z4oC",
+  "tags": []
+}
