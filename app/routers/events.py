@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import traceback
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -9,14 +11,15 @@ router = APIRouter(prefix="/events", tags=["Events"])
 
 
 @router.post("", response_model=EventResponse, status_code=status.HTTP_202_ACCEPTED)
-async def ingest_event(payload: EventIn, db: AsyncSession = Depends(get_db)):
+async def ingest_event(request: Request, payload: EventIn, db: AsyncSession = Depends(get_db)):
     service = BehaviorService(db)
     try:
         event, is_duplicate = await service.ingest(payload)
     except Exception as exc:
+        full_trace = traceback.format_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Event processing failed.",
+            detail=f"{str(exc)} | TRACE: {full_trace}",
         ) from exc
 
     if is_duplicate:
